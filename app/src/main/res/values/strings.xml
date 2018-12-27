@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">wrist_doc</string>
+    <string name="title_index">Index</string>
+    <string name="title_advice">Advice</string>
+    <string name="title_inclusive">About us</string>
+</resources>

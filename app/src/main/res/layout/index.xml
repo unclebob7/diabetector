@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <android.support.v4.widget.NestedScrollView android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="20dp"
+                android:paddingBottom="20dp"
+                android:orientation="vertical"
+                android:clipChildren="false"
+                tools:context="com.alessandrosperotti.expandablecardviewexample.MainActivity"
+                android:background="#FAFAFA">
+
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/glucose"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="Glucose"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true" />
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/potassium"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="Potassium"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true"/>
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/sodium"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="Sodium"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true"
+                    app:animationDuration="900"/>
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/ph"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="pH value"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true"
+                    app:animationDuration="900"/>
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/lactate"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="Lactate"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true"
+                    app:animationDuration="900"/>
+
+                <com.alespero.expandablecardview.ExpandableCardView
+                    android:id="@+id/calcium"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:title="Calcium"
+                    app:icon="@drawable/ic_person"
+                    app:inner_view="@layout/glucose"
+                    app:expandOnClick="true"
+                    app:animationDuration="900"/>
+
+            </LinearLayout>
+
+        </android.support.v4.widget.NestedScrollView>
+
+</RelativeLayout>
