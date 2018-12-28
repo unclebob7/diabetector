@@ -5,4 +5,11 @@
     <color name="colorAccent">#FF4081</color>
     <color name="colorNavIcon">#ffffff</color>
     <color name="colorNavText">#ffffff</color>
+
+    <color name="glucose">#ff0000</color>
+    <color name="potassium">#ff4400</color>
+    <color name="ph">#44ff00</color>
+    <color name="lactate">#00d0ff</color>
+    <color name="sodium">#ffee00</color>
+    <color name="calcium">#6f00ff</color>
 </resources>

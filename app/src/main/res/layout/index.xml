@@ -21,7 +21,6 @@
                 tools:context="com.alessandrosperotti.expandablecardviewexample.MainActivity"
                 android:background="#FAFAFA">
 
-
                 <com.alespero.expandablecardview.ExpandableCardView
                     android:id="@+id/glucose"
                     android:layout_marginLeft="20dp"
@@ -31,7 +30,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="Glucose"
-                    app:icon="@drawable/ic_person"
+                    app:icon="@drawable/glucose"
                     app:inner_view="@layout/glucose"
                     app:expandOnClick="true" />
 
@@ -44,8 +43,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="Potassium"
-                    app:icon="@drawable/ic_person"
-                    app:inner_view="@layout/glucose"
+                    app:icon="@drawable/potassium"
+                    app:inner_view="@layout/potassium"
                     app:expandOnClick="true"/>
 
                 <com.alespero.expandablecardview.ExpandableCardView
@@ -57,8 +56,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="Sodium"
-                    app:icon="@drawable/ic_person"
-                    app:inner_view="@layout/glucose"
+                    app:icon="@drawable/sodium"
+                    app:inner_view="@layout/sodium"
                     app:expandOnClick="true"
                     app:animationDuration="900"/>
 
@@ -71,8 +70,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="pH value"
-                    app:icon="@drawable/ic_person"
-                    app:inner_view="@layout/glucose"
+                    app:icon="@drawable/ph"
+                    app:inner_view="@layout/ph"
                     app:expandOnClick="true"
                     app:animationDuration="900"/>
 
@@ -85,8 +84,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="Lactate"
-                    app:icon="@drawable/ic_person"
-                    app:inner_view="@layout/glucose"
+                    app:icon="@drawable/lactate"
+                    app:inner_view="@layout/lactate"
                     app:expandOnClick="true"
                     app:animationDuration="900"/>
 
@@ -99,8 +98,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:title="Calcium"
-                    app:icon="@drawable/ic_person"
-                    app:inner_view="@layout/glucose"
+                    app:icon="@drawable/calcium"
+                    app:inner_view="@layout/calcium"
                     app:expandOnClick="true"
                     app:animationDuration="900"/>
 

@@ -13,7 +13,7 @@
     android:layout_marginBottom="20dp">
 
     <at.grabner.circleprogress.CircleProgressView
-        android:id="@+id/glucose_circleView"
+        android:id="@+id/calcium_circleView"
         android:layout_width="250dp"
         android:layout_height="250dp" />
 </LinearLayout>
@@ -38,7 +38,7 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/glucose_assessment_tv"
+            android:id="@+id/lactate_assessment_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="18sp"
