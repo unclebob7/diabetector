@@ -19,6 +19,11 @@ import at.grabner.circleprogress.Direction;
 import at.grabner.circleprogress.TextMode;
 import at.grabner.circleprogress.UnitPosition;
 import com.alespero.expandablecardview.ExpandableCardView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.Random;
 
@@ -64,6 +69,36 @@ public class IndexFragment extends Fragment {
         lactate_card = (ExpandableCardView) view.findViewById(R.id.lactate);
         calcium_card = (ExpandableCardView) view.findViewById(R.id.calcium);
     }
+
+    public void basicReadWrite() {
+        // [START write_message]
+        // Write a message to the database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("message");
+
+        myRef.setValue("Hello, World!");
+        // [END write_message]
+
+        // [START read_message]
+        // Read from the database
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                String value = dataSnapshot.getValue(String.class);
+                Log.d("IndexFragment", "Value is: " + value);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w("IndexFragment", "Failed to read value.", error.toException());
+            }
+        });
+        // [END read_message]
+    }
+
     // setting up parameters of circle progress bar
     private void circle_progress_para() {
         // glucose graphic progress-circle

@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "383121049453",
+    "firebase_url": "https://elewatch-525a0.firebaseio.com",
+    "project_id": "elewatch-525a0",
+    "storage_bucket": "elewatch-525a0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:383121049453:android:d048bbc835594dcf",
+        "android_client_info": {
+          "package_name": "com.example.bob.wrist_doc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "383121049453-cdlc3c1860pacvjopjl5e3qjfra32um0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUS8yf4o0woOAGid0q1i4sS3DgPkgvmrI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
