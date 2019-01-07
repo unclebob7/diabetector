@@ -1,9 +1,16 @@
 package com.example.bob.wrist_doc;
 
+import android.Manifest;
+import android.app.ProgressDialog;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,22 +19,47 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import Remote.IUploadAPI;
+import Remote.RetrofitClient;
 import at.grabner.circleprogress.AnimationState;
 import at.grabner.circleprogress.AnimationStateChangedListener;
 import at.grabner.circleprogress.CircleProgressView;
 import at.grabner.circleprogress.Direction;
 import at.grabner.circleprogress.TextMode;
 import at.grabner.circleprogress.UnitPosition;
+import okhttp3.MultipartBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 import com.alespero.expandablecardview.ExpandableCardView;
+import com.example.bob.wrist_doc.Utils.ProgressRequestBody;
+import com.example.bob.wrist_doc.Utils.UploadCallBacks;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Random;
 
-public class IndexFragment extends Fragment {
+import static android.content.Context.MODE_APPEND;
+
+public class IndexFragment extends Fragment implements UploadCallBacks {
     private View view;
     private ExpandableCardView glucose_card;
     private ExpandableCardView sodium_card;
@@ -41,23 +73,134 @@ public class IndexFragment extends Fragment {
     private CircleProgressView ph_mCircleView;
     private CircleProgressView lactate_mCircleView;
     private CircleProgressView calcium_mCircleView;
+    private LineChart chart_glucose;
+    private LineChart chart_potassium;
+    private LineChart chart_ph;
+    private LineChart chart_lactate;
+    private LineChart chart_sodium;
+    private LineChart chart_calcium;
 
-    private TextView glucose_assessment_tv;
+    private ProgressDialog dialog;
+    private static final int REQUEST_PERMISSION = 1000;
+    private static final int PICK_FILE_REQUEST = 1001;
+    public static final String BASE_URL = "http://10.0.2.2/";
+    private IUploadAPI mService;
+    private IUploadAPI getAPIUpload() {
+        return RetrofitClient.getClient(BASE_URL).create(IUploadAPI.class);
+    }
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.index, container, false);
         init();
+
+        //Service
+        mService = getAPIUpload();
+
+        // check permission
+        if(ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            }, REQUEST_PERMISSION);
+        }
+
         element_thread_initializer();
+
         return view;
     }
+
+    private void uploadFile(String file_name) {
+            dialog = new ProgressDialog(getContext());
+            dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            dialog.setMessage("Uploading...");
+            dialog.setIndeterminate(false);
+            dialog.setMax(100);
+            dialog.setCancelable(false);
+
+            // 封装成File类型的object
+            //File file = com.ipaulpro.afilechooser.utils.FileUtils.getFile(getContext(), selectFileUri);
+            File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+file_name);
+            // 封装成请求报文
+            ProgressRequestBody requestFile = new ProgressRequestBody(file, this);
+            // 报文添加文件描述(来自endpoint-php中的 $name)
+            final MultipartBody.Part body = MultipartBody.Part.createFormData("uploaded_file", file.getName(), requestFile);
+
+            // 此处Runnable为interface（抽象）
+            // 亦可封装成内部类
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mService.uploadFile(body)
+                            .enqueue(new Callback<String>() {   // Asynchronously send the request and notify {@code callback} of its response
+                                @Override
+                                public void onResponse(Call<String> call, Response<String> response) {
+                                    dialog.dismiss();
+                                    //Toast.makeText(getContext(), "Uploaded!", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onFailure(Call<String> call, Throwable t) {
+                                    dialog.dismiss();
+                                    Toast.makeText(getContext(), t.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                }
+            }).start();
+        }
 
     // initialize all components of index
     public void init() {
         // element card indicator
         element_card_para();
-
+        chart_setup();
         // setting up parameters of circle progress bar
         circle_progress_para();
+    }
+
+    private void chart_setup() {
+        chart_glucose = (LineChart) view.findViewById(R.id.chart_glucose);
+        chart_potassium = (LineChart) view.findViewById(R.id.chart_potassium);
+        chart_ph = (LineChart) view.findViewById(R.id.chart_ph);
+        chart_lactate = (LineChart) view.findViewById(R.id.chart_lactate);
+        chart_calcium = (LineChart) view.findViewById(R.id.chart_calcium);
+        chart_sodium = (LineChart) view.findViewById(R.id.chart_sodium);
+
+        // real-time chart config
+
+        // chart_glucose config
+        setupChart(chart_glucose);
+        setupAxes(chart_glucose);
+        setupData(chart_glucose);
+        setupLegend(chart_glucose);
+
+        // chart_potassium config
+        setupChart(chart_potassium);
+        setupAxes(chart_potassium);
+        setupData(chart_potassium);
+        setupLegend(chart_potassium);
+
+        // chart_sodium config
+        setupChart(chart_sodium);
+        setupAxes(chart_sodium);
+        setupData(chart_sodium);
+        setupLegend(chart_sodium);
+
+        // chart_lactate config
+        setupChart(chart_lactate);
+        setupAxes(chart_lactate);
+        setupData(chart_lactate);
+        setupLegend(chart_lactate);
+
+        // chart_ph config
+        setupChart(chart_ph);
+        setupAxes(chart_ph);
+        setupData(chart_ph);
+        setupLegend(chart_ph);
+
+        // chart_calcium config
+        setupChart(chart_calcium);
+        setupAxes(chart_calcium);
+        setupData(chart_calcium);
+        setupLegend(chart_calcium);
     }
 
     // element card indicator
@@ -473,11 +616,18 @@ public class IndexFragment extends Fragment {
         new Thread(new thread_potassium()).start();
         new Thread(new thread_lactate()).start();
         new Thread(new thread_ph()).start();
+        new Thread(new thread_calcium()).start();
+    }
+
+    @Override
+    public void onProgressUpdate(int percentage) {
+        dialog.setProgress(percentage);
     }
 
     // glucose-thread
     public class thread_glucose implements Runnable {
-        @Override
+        int i = 0;
+        int j = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -485,10 +635,17 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     glucose_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_glucose, "glucose", i, random_index);
+                    index_append("/glucose_index.txt", random_index);
+                    i++;
+                    j++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
-//                message.what = 1;
-//                handler.sendMessage(message);
+                    message.what = 1;
+                    if(j == 10) {
+                        handler.sendMessage(message);
+                        j = 0;
+                    }
                 } catch (Exception e) {
                 }
             }
@@ -498,7 +655,8 @@ public class IndexFragment extends Fragment {
 
     // sodium-thread
     public class thread_sodium implements Runnable {
-        @Override
+        // 方法内变量不能定义 OR 初始化
+        int i = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -506,7 +664,10 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     sodium_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_sodium, "sodium", i, random_index);
+                    index_append("/sodium_index.txt", random_index);
+                    i++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
 //                message.what = 1;
 //                handler.sendMessage(message);
@@ -519,7 +680,8 @@ public class IndexFragment extends Fragment {
 
     // thread-potassium
     public class thread_potassium implements Runnable {
-        @Override
+        // 方法内变量不能定义 OR 初始化
+        int i = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -527,7 +689,10 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     potassium_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_potassium, "potassium", i, random_index);
+                    index_append("/potassium_index.txt", random_index);
+                    i++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
 //                message.what = 1;
 //                handler.sendMessage(message);
@@ -539,7 +704,8 @@ public class IndexFragment extends Fragment {
 
     // thread-pH
     public class thread_ph implements Runnable {
-        @Override
+        // 方法内变量不能定义 OR 初始化
+        int i = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -547,7 +713,10 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     ph_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_ph, "pH", i, random_index);
+                    index_append("/ph_index.txt", random_index);
+                    i++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
 //                message.what = 1;
 //                handler.sendMessage(message);
@@ -559,7 +728,8 @@ public class IndexFragment extends Fragment {
 
     // thread-lactate
     public class thread_lactate implements Runnable {
-        @Override
+        // 方法内变量不能定义 OR 初始化
+        int i = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -567,7 +737,10 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     lactate_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_lactate, "lactate", i, random_index);
+                    index_append("/lactate_index.txt", random_index);
+                    i++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
 //                message.what = 1;
 //                handler.sendMessage(message);
@@ -579,7 +752,8 @@ public class IndexFragment extends Fragment {
 
     // thread-calcium
     public class thread_calcium implements Runnable {
-        @Override
+        // 方法内变量不能定义 OR 初始化
+        int i = 0;
         public void run() {
             // TODO Auto-generated method stub
             while (true) {
@@ -587,7 +761,10 @@ public class IndexFragment extends Fragment {
                     // generate random index from 0 to 100
                     float random_index = (float) (Math.random()*99 + 1);
                     calcium_mCircleView.setValue(random_index);
-                    Thread.sleep(2000);     // sleep 1000ms
+                    addEntry(chart_calcium, "calcium", i, random_index);
+                    index_append("/calcium_index.txt", random_index);
+                    i++;
+                    Thread.sleep(1000);     // sleep 1000ms
                     Message message = new Message();
 //                message.what = 1;
 //                handler.sendMessage(message);
@@ -596,6 +773,160 @@ public class IndexFragment extends Fragment {
             }
         }
     }
+
+    /**
+     *  upload 6 index file after 10 seconds
+     * */
+//    public class thread_upload implements Runnable {
+//        @Override
+//        public void run() {
+//            while(true) {
+//                try {
+//                    Thread.sleep(10000);
+//                    uploadFile("glucose_index.txt");
+//                    uploadFile("sodium_index.txt");
+//                    uploadFile("potassium_index.txt");
+//                    uploadFile("lactate_index.txt");
+//                    uploadFile("ph_index.txt");
+//                    uploadFile("calcium_index.txt");
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
+
+    private void setupChart(LineChart lineChart) {
+        // enable descriptionn text
+        lineChart.getDescription().setEnabled(false);
+        // enable touch gestures
+        lineChart.setTouchEnabled(true);
+        // if disabled, scaling can be done on x- and y-axis separately
+        lineChart.setPinchZoom(true);
+        // enable scaling
+        lineChart.setScaleEnabled(true);
+        lineChart.setDrawGridBackground(false);
+        // set an alternative background color
+        lineChart.setBackgroundColor(Color.WHITE);
+    }
+
+    private void setupAxes(LineChart lineChart) {
+        // setup x-axis
+        XAxis x1 = lineChart.getXAxis();
+        x1.setTextColor(Color.DKGRAY);
+        x1.setDrawGridLines(false);
+        x1.setAvoidFirstLastClipping(true);
+        x1.setEnabled(true);
+
+        // setup y-axis(left)
+        YAxis leftAxis = lineChart.getAxisLeft();
+        leftAxis.setTextColor(Color.DKGRAY);
+        leftAxis.setAxisMaximum(100f);
+        leftAxis.setAxisMinimum(0f);
+        leftAxis.setDrawGridLines(true);
+
+        // setup y-axis(right)
+        YAxis rightAxis = lineChart.getAxisRight();
+        rightAxis.setEnabled(false);
+
+        // limit lines are drawn underneath data
+        leftAxis.setDrawLimitLinesBehindData(true);
+    }
+
+    private void setupData(LineChart lineChart) {
+        LineData data = new LineData();
+        data.setValueTextColor(Color.DKGRAY);
+        data.setValueTextColor(Color.DKGRAY);
+
+        // add empty data
+        lineChart.setData(data);
+    }
+
+    private void setupLegend(LineChart lineChart) {
+        // get the legend (only possible after setting data)
+        Legend lg = lineChart.getLegend();
+
+        //modify the legend
+        lg.setForm(Legend.LegendForm.CIRCLE);
+        lg.setTextColor(Color.DKGRAY);
+    }
+
+    // if no data-entry receive, use createSet() as the default method
+    private LineDataSet createSet(String set_name) {
+        LineDataSet set = new LineDataSet(null, set_name);
+        set.setAxisDependency(YAxis.AxisDependency.LEFT);
+//        set.setColors(ColorTemplate.VORDIPLOM_COLORS[3]);
+        set.setColors(Color.RED);
+        set.setCircleColor(Color.DKGRAY);
+        set.setLineWidth(2f);
+        set.setCircleRadius(4f);
+        set.setValueTextColor(Color.DKGRAY);
+        set.setValueTextSize(10f);
+        // To show values of each point
+        set.setDrawValues(true);
+
+        return set;
+    }
+
+    private void addEntry(LineChart lineChart, String set_name, int timing, float input_variable) {
+        LineData data = lineChart.getData();
+
+        if(data != null) {
+            ILineDataSet set = data.getDataSetByIndex(0);
+
+            if(set == null) {
+                set = createSet(set_name);
+                data.addDataSet(set);
+            }
+
+            data.addEntry(new Entry(timing, input_variable), 0);
+
+            data.notifyDataChanged();
+            lineChart.notifyDataSetChanged();
+
+            // limit the number of visible entries
+            lineChart.setVisibleXRangeMaximum(10);
+
+            // move to the latest entry
+            lineChart.moveViewToX(data.getEntryCount());
+        }
+    }
+
+    private void index_append(String element, float index) {
+        File element_data = new File(Environment.getExternalStorageDirectory().getAbsolutePath()+element);
+        try {
+            FileOutputStream fos = new FileOutputStream(element_data, true);
+            // float2binary
+            fos.write(Float.floatToIntBits(index));
+            fos.close();
+        }catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch(msg.what) {
+                case 1:
+                    uploadFile("glucose_index.txt");
+                    uploadFile("sodium_index.txt");
+                    uploadFile("potassium_index.txt");
+                    uploadFile("lactate_index.txt");
+                    uploadFile("ph_index.txt");
+                    uploadFile("calcium_index.txt");
+                    break;
+
+                 default:
+
+                     break;
+
+            }
+        }
+    };
 }
 
 

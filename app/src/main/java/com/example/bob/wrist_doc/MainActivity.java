@@ -7,9 +7,19 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
+import Remote.IUploadAPI;
+import Remote.RetrofitClient;
+
 //implement the interface OnNavigationItemSelectedListener in your activity class
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
 
+    public static final String BASE_URL = "http://10.0.2.2/";
+
+    private IUploadAPI mService;
+
+    private IUploadAPI getAPIUpload() {
+        return RetrofitClient.getClient(BASE_URL).create(IUploadAPI.class);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +32,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         //getting bottom navigation view and attaching the listener
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(this);
+
+        //Service
+        mService = getAPIUpload();
     }
 
 

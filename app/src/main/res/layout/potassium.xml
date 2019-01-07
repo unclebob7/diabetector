@@ -46,5 +46,11 @@
             android:text="NORMAL"
             android:textStyle="bold" />
     </LinearLayout>
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_potassium"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"/>
+
     </LinearLayout>
 </LinearLayout>

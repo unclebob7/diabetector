@@ -1,203 +1,153 @@
 package com.example.bob.wrist_doc;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.Toast;
 
+import com.example.bob.wrist_doc.Utils.ProgressRequestBody;
+import com.example.bob.wrist_doc.Utils.UploadCallBacks;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.LimitLine;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.pusher.client.Pusher;
-import com.pusher.client.PusherOptions;
-import com.pusher.client.channel.Channel;
-import com.pusher.client.channel.SubscriptionEventListener;
+import java.io.File;
+import Remote.IUploadAPI;
+import Remote.RetrofitClient;
+import okhttp3.MultipartBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-/**
- * Created by Belal on 1/23/2018.
- */
 
-public class AdviceFragment extends Fragment {
+public class AdviceFragment extends Fragment implements UploadCallBacks {
+    private static final int REQUEST_PERMISSION = 1000;
+    private static final int PICK_FILE_REQUEST = 1001;
     private View view;
-    private LineChart mChart;
-    private Pusher pusher;
+    private Button upload_btn;
+    private Button choose_file;
+    private Uri selectFileUri;
+    private ProgressDialog dialog;
 
-    // PUSHER setup
-    private static final String PUSHER_API_KEY = "fd6a8dc6ba53bbb0ee19";
-    private static final String CHANNEL_NAME = "my-channel";
-    private static final String PUSHER_APP_CLUSTER = "ap3";
-    private static final String EVENT_NAME = "my-event";
+    public static final String BASE_URL = "http://10.0.2.2/";
+    private IUploadAPI mService;
+    private IUploadAPI getAPIUpload() {
+        return RetrofitClient.getClient(BASE_URL).create(IUploadAPI.class);
+    }
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.advice, container, false);
+
         init();
-        new Thread(new thread_dataRx()).start();
+
+        //Service
+        mService = getAPIUpload();
+
+        // check permission
+        if(ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+            }, REQUEST_PERMISSION);
+        }
+
         return view;
     }
 
     private void init() {
-        // correlating xml file
-        mChart = (LineChart) view.findViewById(R.id.chart);
+        upload_btn = (Button) view.findViewById(R.id.upload);
+        choose_file = (Button) view.findViewById(R.id.choose_file);
 
-        //real-time chart config
-        setupChart();
-        setupAxes();
-        setupData();
-        setupLegend();
-
-        // setting up PUSHER implementation
-        PusherOptions options = new PusherOptions();
-        options.setCluster(PUSHER_APP_CLUSTER);
-        Pusher pusher = new Pusher(PUSHER_API_KEY, options);
-        Channel channel = pusher.subscribe(CHANNEL_NAME);
-
-        SubscriptionEventListener eventListener = new SubscriptionEventListener() {
+        choose_file.setOnClickListener(new View.OnClickListener() {     // View 类所继承的抽象方法（onClickListener）
             @Override
-            public void onEvent(String channel, String event, String data) {
-                new Thread(new thread_dataRx()).start();
+            public void onClick(View view) {
+                choose_file();
             }
-        };
-//        channel.bind(EVENT_NAME, new SubscriptionEventListener() {
-//            @Override
-//            public void onEvent(String channelName, String eventName, final String data) {
-//                System.out.println(data);
-//                Log.d("GCP", data);
-//            }
-//    });
+        });
 
-        pusher.connect();
-    }
-
-    private void setupChart() {
-        // enable descriptionn text
-        mChart.getDescription().setEnabled(false);
-        // enable touch gestures
-        mChart.setTouchEnabled(true);
-        // if disabled, scaling can be done on x- and y-axis separately
-        mChart.setPinchZoom(true);
-        // enable scaling
-        mChart.setScaleEnabled(true);
-        mChart.setDrawGridBackground(false);
-        // set an alternative background color
-        mChart.setBackgroundColor(Color.DKGRAY);
-    }
-
-    private void setupAxes() {
-        // setup x-axis
-        XAxis x1 = mChart.getXAxis();
-        x1.setTextColor(Color.WHITE);
-        x1.setDrawGridLines(false);
-        x1.setAvoidFirstLastClipping(true);
-        x1.setEnabled(true);
-
-        // setup y-axis(left)
-        YAxis leftAxis = mChart.getAxisLeft();
-        leftAxis.setTextColor(Color.WHITE);
-        leftAxis.setAxisMaximum(100f);
-        leftAxis.setAxisMinimum(0f);
-        leftAxis.setDrawGridLines(true);
-
-        // setup y-axis(right)
-        YAxis rightAxis = mChart.getAxisRight();
-        rightAxis.setEnabled(false);
-
-        // Add an alert up-limit (glucose)
-        LimitLine l1 = new LimitLine(70f, "Glucose Upper Limit");
-        l1.setLineWidth(2f);
-        l1.setLabelPosition(LimitLine.LimitLabelPosition.RIGHT_TOP);
-        l1.setTextSize(10f);
-        l1.setTextColor(Color.WHITE);
-
-        // reset all limit lines to avoid overlapping lines
-
-        // limit lines are drawn underneath data
-        leftAxis.setDrawLimitLinesBehindData(true);
-    }
-
-    private void setupData() {
-        LineData data = new LineData();
-        data.setValueTextColor(Color.WHITE);
-
-        // add empty data
-        mChart.setData(data);
-    }
-
-    private void setupLegend() {
-        // get the legend (only possible after setting data)
-        Legend lg = mChart.getLegend();
-
-        //modify the legend
-        lg.setForm(Legend.LegendForm.CIRCLE);
-        lg.setTextColor(Color.WHITE);
-    }
-
-    // if no data-entry receive, use createSet() as the default method
-    private LineDataSet createSet() {
-        LineDataSet set = new LineDataSet(null, "Glucose index");
-        set.setAxisDependency(YAxis.AxisDependency.LEFT);
-        set.setColors(ColorTemplate.VORDIPLOM_COLORS[0]);
-        set.setCircleColor(Color.WHITE);
-        set.setLineWidth(2f);
-        set.setCircleRadius(4f);
-        set.setValueTextColor(Color.WHITE);
-        set.setValueTextSize(10f);
-        // To show values of each point
-        set.setDrawValues(true);
-
-        return set;
-    }
-
-    private void addEntry(int timing, float input_variable) {
-        LineData data = mChart.getData();
-
-        if(data != null) {
-            ILineDataSet set = data.getDataSetByIndex(0);
-
-            if(set == null) {
-                set = createSet();
-                data.addDataSet(set);
+        upload_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                uploadFile();
             }
+        });
+    }
 
-            data.addEntry(new Entry(timing, input_variable), 0);
+    private void uploadFile() {
+        if(selectFileUri != null) {
+            dialog = new ProgressDialog(getContext());
+            dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            dialog.setMessage("Uploading...");
+            dialog.setIndeterminate(false);
+            dialog.setMax(100);
+            dialog.setCancelable(false);
+            dialog.show();
 
-            data.notifyDataChanged();
-            mChart.notifyDataSetChanged();
+            // 封装成File类型的object
+            File file = com.ipaulpro.afilechooser.utils.FileUtils.getFile(getContext(), selectFileUri);
+            // 封装成请求报文
+            ProgressRequestBody requestFile = new ProgressRequestBody(file, this);
+            // 报文添加文件描述(来自endpoint-php中的 $name)
+            final MultipartBody.Part body = MultipartBody.Part.createFormData("uploaded_file", file.getName(), requestFile);
 
-            // limit the number of visible entries
-            mChart.setVisibleXRangeMaximum(10);
+            // 此处Runnable为interface（抽象）
+            // 亦可封装成内部类
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mService.uploadFile(body)
+                            .enqueue(new Callback<String>() {   // Asynchronously send the request and notify {@code callback} of its response
+                                @Override
+                                public void onResponse(Call<String> call, Response<String> response) {
+                                    dialog.dismiss();
+                                    Toast.makeText(getContext(), "Uploaded!", Toast.LENGTH_SHORT).show();
+                                }
 
-            // move to the latest entry
-            mChart.moveViewToX(data.getEntryCount());
+                                @Override
+                                public void onFailure(Call<String> call, Throwable t) {
+                                    dialog.dismiss();
+                                    Toast.makeText(getContext(), t.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                }
+            }).start();
         }
     }
 
-    public class thread_dataRx implements Runnable {
-        // 方法内变量不能定义 OR 初始化
-        int i = 0;
-        public void run() {
-            while (true) {
-                try {
-                    // generate random index from 0 to 100
-                    float random_index = (float) (Math.random() * 40 + 10);
-                    addEntry(i, random_index);
-                    i++;
-                    Thread.sleep(1000);     // sleep 1000ms
-                } catch (Exception e) {
+    private void choose_file() {
+        // import module
+        // add project dependency
+        Intent getContentIntent = Intent.createChooser(com.ipaulpro.afilechooser.utils.FileUtils.createGetContentIntent(), "Select a file");
+        startActivityForResult(getContentIntent, PICK_FILE_REQUEST);
+    }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode == Activity.RESULT_OK) {
+            if(data != null) {
+                selectFileUri = data.getData();
+                if(selectFileUri != null && !selectFileUri.getPath().isEmpty()) {
+                    Toast.makeText(getContext(), "file_selected.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Error.", Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
 
+    @Override
+    public void onProgressUpdate(int percentage) {
+        dialog.setProgress(percentage);
+    }
 }

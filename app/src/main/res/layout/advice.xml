@@ -3,9 +3,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/chart"
+    <Button
+        android:id="@+id/upload"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="30dp"
+        android:text="upload"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_alignParentBottom="true" />
+    <Button
+        android:id="@+id/choose_file"
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:text="choose_file"
+        android:layout_marginBottom="50dp"/>
 
 </RelativeLayout>
