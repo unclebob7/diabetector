@@ -47,10 +47,6 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
                 fragment = new IndexFragment();
                 break;
 
-            case R.id.navigation_advice:
-                fragment = new AdviceFragment();
-                break;
-
             case R.id.navigation_inclusive:
                 fragment = new InclusiveFragment();
                 break;
